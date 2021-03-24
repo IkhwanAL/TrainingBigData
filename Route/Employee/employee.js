@@ -2,8 +2,7 @@ const express = require('express');
 const employee = express.Router();
 const {Con} = require('../../connection');
 const cors = require('cors');
-const redis = require('redis');
-const utils = require('util');
+const {Readable, Writable} = require('stream');
 const {findSomething} = require('../../utils/queryCreator')
 require('dotenv/config');
 
@@ -14,27 +13,31 @@ employee.get('/' ,async (req, res) => {
     try{
         const options = {
             field: ['emp_no', 'salary', 'to_date'],
-            filterOption: ['ORDER BY salary DESC', 'LIMIT 100'],
+            filterOption: ['ORDER BY salary DESC', 'LIMIT 5000'], // Offset Limit
         }
         let con = await Con();
-        const query = con.query(await findSomething('salaries', options));
-        // let key = 'salaries';
-        if(query){
+        // console.log(findSomething('salaries', options));
+        const query = con.query(findSomething('salaries', options));
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Request-Method', 'GET');
             res.setHeader('Content-Type', 'application/json');
+        
+            let result = [];
             query.stream().pipe(require('stream').Transform({
                 objectMode: true,
                 transform: (data, encoding, callback) => {
-                    res.write(JSON.stringify(data))
-                    callback()  
+                    // res.write(JSON.stringify(data));
+                    result.push(data);
+                    callback();
                 }
-            })).on('finish',() => {
+            })).once('finish',() => {
                 console.log("END!!!");
-                res.end();
+                res.send(JSON.stringify(result));
+                res.end()
+                con.release();
             })
-        }
     }catch(er){
+        console.log('Error');
         res.status(500).json({'message': `${er}`})
     }
    

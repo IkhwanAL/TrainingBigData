@@ -2,9 +2,9 @@
  * 
  * @param {string} tableName 
  * @param {object} option include field and filterOption
- * @returns Promise SQL Query
+ * @returns SQL Query
  */
- let findSomething = (tableName, option = {field: [], filterOption: []}) => {
+ let findSomething = (tableName, option = {field: [], filterOption: [], join: []}) => {
     let {field, filterOption} = option;
     let findUser = '';
         if(!tableName){
