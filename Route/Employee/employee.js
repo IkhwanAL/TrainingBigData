@@ -2,31 +2,35 @@ const express = require('express');
 const employee = express.Router();
 const {Con} = require('../../connection');
 const cors = require('cors');
-const {Readable, Writable} = require('stream');
-const {findSomething} = require('../../utils/queryCreator')
+const {findSomething} = require('../../utils/queryBuilder')
 require('dotenv/config');
 
-employee.use(cors());
+const allowUrl = ['http://localhost:3000', 'http://my.example.com'];
+const corsDelegate = (req, callback) => {
+    // console.log(req.decoded = 'string');
+    var corsOption = {};
+    corsOption = {origin: true, allowMethod: ['GET', 'POST']};
+    callback(null, corsOption);
+}
 
-employee.get('/' ,async (req, res) => {
+employee.get('/', cors(corsDelegate), async (req, res) => {
     console.log('im in');
     try{
         const options = {
             field: ['emp_no', 'salary', 'to_date'],
             filterOption: ['ORDER BY salary DESC', 'LIMIT 5000'], // Offset Limit
         }
-        let con = await Con();
-        // console.log(findSomething('salaries', options));
+
+        // Connection, Query, And Stream Data To Client
+        let con = await Con(); 
         const query = con.query(findSomething('salaries', options));
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Request-Method', 'GET');
             res.setHeader('Content-Type', 'application/json');
         
             let result = [];
             query.stream().pipe(require('stream').Transform({
                 objectMode: true,
                 transform: (data, encoding, callback) => {
-                    // res.write(JSON.stringify(data));
+                    // console.log(encoding);
                     result.push(data);
                     callback();
                 }
